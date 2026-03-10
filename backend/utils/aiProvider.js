@@ -1,4 +1,6 @@
 import OpenAI from "openai";
+import Anthropic from "@anthropic-ai/sdk";
+
 const callOpenAI = async (apiKey, prompt) => {
   if (!apiKey) throw new Error("Missing OpenAI API key");
 
@@ -16,6 +18,21 @@ const callOpenAI = async (apiKey, prompt) => {
   return response.choices?.[0]?.message?.content || "";
 };
 
+const callAnthropic = async (apiKey, prompt) => {
+  if (!apiKey) throw new Error("Missing Anthropic API key");
+
+  const anthropic = new Anthropic({ apiKey });
+
+  const response = await anthropic.messages.create({
+    model: "claude-3-sonnet-20240229",
+    max_tokens: 800,
+    messages: [{ role: "user", content: prompt }],
+  });
+  console.log("Anthropic response:", response);
+  return response.content?.[0]?.text || "";
+};
+
+
 
 export const analyzeWithProvider = async (
   provider,
@@ -28,6 +45,12 @@ export const analyzeWithProvider = async (
       const key = apiKeys?.openai || serverDefaultKey;
       return await callOpenAI(key, prompt);
     }
+
+    if (provider === "anthropic") {
+      const key = apiKeys?.anthropic || serverDefaultKey;
+      return await callAnthropic(key, prompt);
+    }
+
 
     throw new Error(`Unsupported provider: ${provider}`);
   } catch (err) {

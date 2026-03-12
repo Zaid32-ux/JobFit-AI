@@ -8,6 +8,10 @@ config({ path: "./.env" });//calling again in main file bcz load it globally its
 const app = express();
 app.use(express.json());
 
+const allowedOrigins = [       
+  "http://localhost:5173",                       
+];
+
 app.use("/api/docs", documentsRoutes);
 app.use("/api/auth", authRoutes);
 

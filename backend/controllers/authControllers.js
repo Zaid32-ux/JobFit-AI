@@ -45,5 +45,31 @@ export const login = async (req, res, next) => {
   }
 };
 
+export const profile = async (req, res, next) => {
+  try {
+    const user = req.user;
+    // return paginated document history for the user
+    const page = parseInt(req.query.page || "1", 10);
+    const limit = parseInt(req.query.limit || "5", 10);
+    const skip = (page - 1) * limit;
+    const docs = await Document.find({ user: user._id })
+      .sort({ uploadedAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .select("originalName mimeType size uploadedAt analysis");
+    const total = await Document.countDocuments({ user: user._id });
+    const documentHistory = {
+      docs,
+      total,
+      page,
+      pages: Math.ceil(total / limit),
+    };
 
-export default { register, login };
+    res.json({ user, documentHistory });
+  } catch (err) {
+    next(err);
+  }
+};
+
+
+export default { register, login, profile };

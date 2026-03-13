@@ -71,5 +71,26 @@ export const profile = async (req, res, next) => {
   }
 };
 
+export const updateProfile = async (req, res, next) => {
+  try {
+    const user = req.user;
+    const { aiKeys, preferredAI, name } = req.body;
+    if (name) user.name = name;
+    if (aiKeys) user.aiKeys = { ...user.aiKeys, ...aiKeys };
+    if (preferredAI) user.preferredAI = preferredAI;
+    await user.save();
+    res.json({
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        preferredAI: user.preferredAI,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 
 export default { register, login, profile };

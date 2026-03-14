@@ -2,6 +2,7 @@ import fs from "fs/promises";
 import path from "path";
 import { PDFParse } from "pdf-parse";
 import Document from "../models/Document.js";
+import { enqueue } from "../jobs/worker.js";
 import Analysis from "../models/Analysis.js";
 
 const uploadsDir = path.resolve("./uploads");
@@ -151,10 +152,61 @@ export const previewDoc = async (req, res, next) => {
   }
 };
 
+// Download original document
+export const downloadOriginal = async (req, res, next) => {
+  try {
+    const doc = await Document.findById(req.params.id);
+    if (!doc) return res.status(404).json({ error: "Document not found" });
+    if (!doc.user.equals(req.user._id))
+      return res.status(403).json({ error: "Forbidden" });
+
+    const filePath = path.join(uploadsDir, doc.filename);
+    const resolved = path.resolve(filePath);
+    if (!resolved.startsWith(uploadsDir))
+      return res.status(400).json({ error: "Invalid file path" });
+
+    res.download(resolved, doc.originalName);
+  } catch (err) {
+    next(err);
+  }
+};
+
+// Analyze document
+export const analyzeDoc = async (req, res, next) => {
+  try {
+    const doc = await Document.findById(req.params.id).populate("analysis");
+    if (!doc) return res.status(404).json({ error: "Document not found" });
+    if (!doc.user.equals(req.user._id))
+      return res.status(403).json({ error: "Forbidden" });
+
+    if (doc.analysis?.status === "done") {
+      return res.json({ ok: true, cached: true, analysis: doc.analysis });
+    }
+    if (doc.analysis?.status === "processing") {
+      return res.json({ ok: true, message: "Process Already Started" });
+    }
+
+    const analysis = await Analysis.create({
+      document: doc._id,
+      status: "processing",
+    });
+    doc.analysis = analysis._id;
+    await doc.save();
+
+    await enqueue(doc._id);
+
+    res.json({ ok: true, message: "Analysis started", analysis });
+  } catch (err) {
+    next(err);
+  }
+};
+
 export default {
   uploadDoc,
   listDocs,
   getDoc,
   deleteDoc,
   previewDoc,
+  analyzeDoc,
+  downloadOriginal,
 };

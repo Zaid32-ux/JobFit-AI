@@ -180,5 +180,12 @@ const processQueue = async () => {
   running = false;
 };
 
+export const resumePendingJobs = async () => {
+  if (initialized) return;
+  initialized = true;
 
-export default { enqueue };
+  const pending = await Analysis.find({ status: "processing" });
+  for (const a of pending) enqueue(a.document.toString());
+};
+
+export default { enqueue, resumePendingJobs };

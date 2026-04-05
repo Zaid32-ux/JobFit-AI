@@ -1,6 +1,6 @@
 import { request } from "./api";
 
-const API_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+const API_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3001";
 
 export const getDocs = async () => {
   const res = await request({

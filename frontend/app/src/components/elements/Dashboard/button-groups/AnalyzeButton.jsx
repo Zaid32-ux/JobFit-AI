@@ -94,6 +94,15 @@ export function AnalyzeButton({ doc, onStatusUpdate }) {
           )}
         </Button>
       </TooltipTrigger>
+      <TooltipContent>
+        {loading
+          ? "Triggering analysis..."
+          : isProcessing
+          ? doc.analysis?.status === "processing"
+            ? "Analysis in progress"
+            : "Analysis done"
+          : "Click to analyze"}
+      </TooltipContent>
     </Tooltip>
   );
 }
